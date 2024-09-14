@@ -1,76 +1,98 @@
-
-class newtonRaphson:
-    def derivada_consumo(tipo_imovel, quartos, andares, dias_mes=30):
+class newton_raphson:
+    def consumo_total_litros_mes(tipo_imovel, quartos, consumo_por_pessoa, andares=1, dias_mes=30):
         """
-        Calcula a derivada do consumo total de água em relação ao número de andares.
-        
+        Calcula o consumo total de água em um mês para um apartamento ou casa.
+
         Args:
             tipo_imovel (str): Tipo de imóvel ('apartamento' ou 'casa').
             quartos (int): Número de quartos no imóvel.
-            andares (int): Número de andares.
+            consumo_por_pessoa (float): Consumo diário de água por pessoa (em litros).
+            andares (int): Número de andares (para apartamentos, por padrão é 1 para casas).
             dias_mes (int): Número de dias no mês (padrão = 30).
-        
+
         Returns:
-            float: Derivada do consumo total em m³ por andar.
+            float: Consumo total de água em m³ por mês.
         """
         if tipo_imovel == 'apartamento':
-            consumo_por_pessoa = 150
-            pessoas = (2 * quartos) + 2
+            pessoas = (2 * quartos) + 2  
         elif tipo_imovel == 'casa':
-            consumo_por_pessoa = 200
-            pessoas = 2 * quartos
+            pessoas = 2 * quartos  
         else:
             raise ValueError("Tipo de imóvel inválido. Escolha 'apartamento' ou 'casa'.")
 
-    
-        consumo_diario_com_reserva = 1.2 * pessoas * consumo_por_pessoa
+        consumo_diario = pessoas * consumo_por_pessoa
+        consumo_diario_com_reserva = 1.2 * consumo_diario
+        consumo_total_dia = consumo_diario_com_reserva * andares
+        consumo_total_mes = consumo_total_dia * dias_mes
+        consumo_total_m3_mes = consumo_total_mes / 1000
 
-    
-        derivada = consumo_diario_com_reserva * dias_mes / 1000  # Derivada em m³
-        
-        return derivada
+        return consumo_total_m3_mes
 
-
-    def calcular(func, deriv_func, limite, quartos, tipo_imovel, dias_mes=30, tol=1e-5, max_iter=100):
+    def newton_raphson_consumo(tipo_imovel, quartos, andares, dias_mes, consumo_desejado, tol=1e-6, max_iter=1000):
         """
-        Método de Newton-Raphson para encontrar o número de andares necessário para atingir o limite de consumo.
-        
+        Aplica o método de Newton-Raphson para encontrar o valor de consumo por pessoa que satisfaça
+        o consumo total desejado.
+
         Args:
-            func (function): Função que calcula o consumo total (função objetivo).
-            deriv_func (function): Função que calcula a derivada do consumo total.
-            limite (float): Limite de consumo em m³.
-            quartos (int): Número de quartos no imóvel.
             tipo_imovel (str): Tipo de imóvel ('apartamento' ou 'casa').
-            dias_mes (int): Número de dias no mês (padrão = 30).
-            tol (float): Tolerância para o erro da aproximação.
+            quartos (int): Número de quartos no imóvel.
+            andares (int): Número de andares no imóvel.
+            dias_mes (int): Número de dias no mês.
+            consumo_desejado (float): Consumo total desejado em m³.
+            tol (float): Tolerância para o erro do método.
             max_iter (int): Número máximo de iterações.
-        
+
         Returns:
-            float: Aproximação do número de andares para atingir o limite de consumo.
+            float: Valor de consumo por pessoa que resulta no consumo total desejado.
         """
+        # Função f(x) = consumo_total_litros_mes - consumo_desejado
+        def f(consumo_por_pessoa):
+            return newton_raphson.consumo_total_litros_mes(tipo_imovel, quartos, consumo_por_pessoa, andares, dias_mes) - consumo_desejado
 
-        andares = 10
-        iteracoes = 0
+        # Derivada numérica da função f em relação ao consumo por pessoa
+        def f_derivada(consumo_por_pessoa, h=1e-6):
+            return (f(consumo_por_pessoa + h) - f(consumo_por_pessoa)) / h
 
-        while iteracoes < max_iter:
+        # Valor inicial de chute
+        consumo_por_pessoa = 150  # Chute inicial (em litros)
+
+        i = 0
         
-            consumo_atual = func(tipo_imovel, quartos, andares, dias_mes) - limite
-            derivada_atual = deriv_func(tipo_imovel, quartos, andares, dias_mes)
+        for _ in range(max_iter):
+            # Valor da função e sua derivada
+            f_val = f(consumo_por_pessoa)
+            f_deriv_val = f_derivada(consumo_por_pessoa)
 
-        
-            if derivada_atual == 0:
-                print("Derivada zero encontrada, o método não pode continuar.")
-                return None
+            # Atualização do valor pelo método de Newton-Raphson
+            if abs(f_deriv_val) < tol:
+                raise ValueError("Derivada muito pequena. Método pode não convergir.")
 
-        
-            andares_novo = andares - (consumo_atual / derivada_atual)
+            consumo_por_pessoa_novo = consumo_por_pessoa - f_val / f_deriv_val
+            
+            print('i = ' + i + ' | x = ' + consumo_por_pessoa_novo)
 
-        
-            if abs(andares_novo - andares) < tol:
-                return andares_novo
+            # Verificação da convergência
+            if abs(consumo_por_pessoa_novo - consumo_por_pessoa) < tol:
+                return consumo_por_pessoa_novo
 
-            andares = andares_novo
-            iteracoes += 1
+            consumo_por_pessoa = consumo_por_pessoa_novo
+            i+=1
 
-    
-        return andares
+        raise ValueError("Número máximo de iterações atingido. Método não convergiu.")
+
+    def main():
+        tipo_imovel = input("Digite o tipo de imóvel ('apartamento' ou 'casa'): ").lower()
+        quartos = int(input("Digite o número de quartos: "))
+        if tipo_imovel == 'apartamento':
+            andares = int(input("Digite o número de andares: "))
+        else:
+            andares = 1  # Para casas, por padrão, será 1 andar
+        dias_mes = int(input("Digite o número de dias no mês: "))
+        consumo_desejado = float(input("Digite o consumo desejado em m³: "))
+
+        # Encontrar o consumo por pessoa usando Newton-Raphson
+        try:
+            consumo_por_pessoa_ideal = newton_raphson.newton_raphson_consumo(tipo_imovel, quartos, andares, dias_mes, consumo_desejado)
+            print(f"O consumo ideal por pessoa é: {consumo_por_pessoa_ideal:.2f} litros")
+        except ValueError as e:
+            print(e)
