@@ -29,7 +29,7 @@ class bisseccao:
 
         return consumo_total_m3_mes
 
-    def bissecao_consumo(tipo_imovel, quartos, andares, dias_mes, consumo_desejado, tol=1e-4, max_iter=10):
+    def bissecao_consumo(tipo_imovel, quartos, andares, dias_mes, consumo_desejado, tol=1e-4, max_iter=1000):
         """
         Aplica o método da Bissecção para encontrar o valor de consumo por pessoa que satisfaça
         o consumo total desejado.
